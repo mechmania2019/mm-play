@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: play
+  labels:
+    app: play
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: play
+  template:
+    metadata:
+      labels:
+        app: play
+    spec:
+      containers:
+      - name: play
+        image: gcr.io/mechmania2017/play:latest
+        env:
+          - name: MONGO_URL
+            valueFrom:
+              secretKeyRef:
+                name: creds
+                key: mongo
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-sock
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: play-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: play
+  ports:
+  - port: 80
+    name: play-service
+    targetPort: 3000
+    protocol: TCP
