@@ -15,7 +15,7 @@ const COMPILE_DIR = "/compile";
 let busy = false;
 const queue = h => async (req, res) => {
   if (busy) {
-    return send(res, 409, "Servers are busy. Try again later.")
+    return send(res, 429, "Servers are busy. Try again later.")
   }
   busy = true;
   let ret = null;
