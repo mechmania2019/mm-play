@@ -1,7 +1,6 @@
 const {promisify} = require("util")
 
 const fs = require('fs');
-const { send } = require("micro");
 const rimraf = promisify(require("rimraf"));
 const tar = require("tar");
 const execa = require("execa");
@@ -12,10 +11,12 @@ const mkdir = promisify(fs.mkdir);
 
 const COMPILE_DIR = "/compile";
 
+const send = (res, status, data) => (res.statusCode = status, res.end(data));
+
 let busy = false;
 const queue = h => async (req, res) => {
   if (busy) {
-    return send(res, 429, "Servers are busy. Try again later.")
+    send(res, 429, "Servers are busy. Try again later.")
   }
   busy = true;
   let ret = null;
@@ -33,7 +34,7 @@ module.exports = async (req, res) => {
   const { code: updateCode } = await run("docker", ["pull", "pranaygp/mm"]);
   if (updateCode && updateCode !== 0) {
     console.error("Error updating the game binary");
-    return send(res, 500, "An unexpected error occured on the server");
+    send(res, 500, "An unexpected error occured on the server");
   }
 
   // clear the COMPILE_DIR
@@ -68,7 +69,7 @@ ${buildStderr}
 `;
     if (buildCode && buildCode !== 0) {
       console.error("Error building the bot");
-      return send(res, 400, body);
+      send(res, 400, body);
     }
 
     console.log("Running game against your own bot");
@@ -84,13 +85,13 @@ ${buildStderr}
     runProc.on("error", e => {
       console.error("Error running the game");
       console.error(e);
-      return send(res, 500, `The game engine exited with code ${e.code}`);
+      send(res, 500, `The game engine exited with code ${e.code}`);
     });
-    return send(res, 200, stdout);
+    send(res, 200, stdout);
   });
   data.on("error", e => {
     console.error("Error when extracting uploaded files");
     console.error(e);
-    return send(res, 500, "An unexpected error occured on the server");
+    send(res, 500, "An unexpected error occured on the server");
   });
 };
